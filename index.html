@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Toolkit</title>
+</head>
+<body>Digitalni potpis</h1>
+
+<label for="fileInput">Choose File:</label>
+<input type="file" id="fileInput" accept=".txt">
+
+<div>
+    <label for="secretKey">Secret Key:</label>
+    <input type="text" id="secretKey">
+    <button onclick="generateSecretKey()">Load Secret Key</button>
+</div>
+
+<div>
+    <label for="publicKey">Public Key:</label>
+    <input type="text" id="publicKey">
+    <button onclick="generatePublicKey()">Load Public Key</button>
+</div>
+
+<div>
+    <label for="privateKey">Private Key:</label>
+    <input type="text" id="privateKey">
+    <button onclick="generatePrivateKey()">Load Private Key</button>
+</div>
+
+<button onclick="encryptSymmetric()">Encrypt Symmetrically</button>
+<button onclick="decryptSymmetric()">Decrypt Symmetrically</button>
+<button onclick="encryptAsymmetric()">Encrypt Asymmetrically</button>
+<button onclick="decryptAsymmetric()">Decrypt Asymmetrically</button>
+
+<script>
+    // Placeholder functions for loading keys and cryptographic operations
+    const serverBaseUrl = 'http://localhost:3000'; // Replace with your actual server URL
+
+    async function sendKeyRequest(endpoint, keyType) {
+        try {
+            const response = await fetch(`${serverBaseUrl}/${endpoint}`);
+            console.log(response)
+            const key = await response.text();
+            console.log(key)
+            document.getElementById(`${keyType}Key`).value = key;
+        } catch (error) {
+            console.error('Error fetching key:', error);
+        }
+    }
+
+    function generateSecretKey() {
+        sendKeyRequest('generateSecretKeyEndpoint', 'secret');
+    }
+
+    function generatePublicKey() {
+        sendKeyRequest('generatePublicKeyEndpoint', 'public');
+    }
+
+    function generatePrivateKey() {
+        sendKeyRequest('generatePrivateKeyEndpoint', 'private');
+    }
+
+    function encryptSymmetric() {
+        // Implement symmetric encryption logic here
+    }
+
+    function decryptSymmetric() {
+        // Implement symmetric decryption logic here
+    }
+
+    function encryptAsymmetric() {
+        // Implement asymmetric encryption logic here
+    }
+
+    function decryptAsymmetric() {
+        // Implement asymmetric decryption logic here
+    }
+</script>
+</body>
+</html>
