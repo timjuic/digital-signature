@@ -49,16 +49,19 @@
         }
     }
 
-    function generateSecretKey() {
-        sendKeyRequest('generateSecretKeyEndpoint', 'secret');
-    }
+    function prepareFile() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
 
-    function generatePublicKey() {
-        sendKeyRequest('generatePublicKeyEndpoint', 'public');
-    }
+        if (!file) {
+            console.error('No file selected');
+            return;
+        }
 
-    function generatePrivateKey() {
-        sendKeyRequest('generatePrivateKeyEndpoint', 'private');
+        const formData = new FormData();
+        formData.append('file', file);
+
+        return formData;
     }
 
     function encryptSymmetric() {
@@ -66,11 +69,26 @@
     }
 
     function decryptSymmetric() {
-        // Implement symmetric decryption logic here
+
     }
 
-    function encryptAsymmetric() {
-        // Implement asymmetric encryption logic here
+    async function encryptAsymmetric() {
+        let formData = prepareFile();
+
+        try {
+            const response = await fetch(`${serverBaseUrl}/processFile/asymmetric`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                console.log('Asymmetric crypto operations completed successfully');
+            } else {
+                console.error('Failed to perform asymmetric crypto operations:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error performing asymmetric crypto operations:', error);
+        }
     }
 
     function decryptAsymmetric() {
