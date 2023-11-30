@@ -44,6 +44,71 @@ app.use(cors());
 // });
 
 
+app.post('/symmetricEncryption', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).send('No file uploaded');
+        }
+
+        const fileContent = req.file.buffer.toString('utf-8');
+
+        // Generate a symmetric key (for demonstration purposes, use a secure key management system in production)
+        const symmetricKey = crypto.randomBytes(32);
+
+        // Create an initialization vector (IV)
+        const iv = crypto.randomBytes(16);
+
+        // Create a cipher using the symmetric key and IV
+        const cipher = crypto.createCipheriv('aes-256-cbc', symmetricKey, iv);
+
+        // Encrypt the original data
+        const encryptedText = Buffer.concat([cipher.update(fileContent, 'utf-8'), cipher.final()]).toString('base64');
+
+        // Save the symmetric key and IV to files (for demonstration purposes, use a secure key management system in production)
+        await saveToFile('secret_key.txt', symmetricKey.toString('base64'));
+        await saveToFile('symmetric_iv.txt', iv.toString('base64'));
+
+        // Save the encrypted text to a file
+        await saveToFile('symmetric_encrypted_text.txt', encryptedText);
+
+        res.status(200).send('Symmetric encryption completed successfully');
+    } catch (error) {
+        console.error('Error processing file:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+app.post('/symmetricDecryption', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).send('No file uploaded');
+        }
+
+        const fileContent = req.file.buffer.toString('utf-8');
+
+        // Read the encrypted text from the file
+        const encryptedText = await readFile('symmetric_encrypted_text.txt');
+
+        // Read the symmetric key and IV from files (for demonstration purposes, use a secure key management system in production)
+        const symmetricKey = Buffer.from(await readFile('secret_key.txt'), 'base64');
+        const iv = Buffer.from(await readFile('symmetric_iv.txt'), 'base64');
+
+        // Create a decipher using the symmetric key and IV
+        const decipher = crypto.createDecipheriv('aes-256-cbc', symmetricKey, iv);
+
+        // Decrypt the encrypted data
+        const decryptedText = Buffer.concat([decipher.update(Buffer.from(encryptedText, 'base64')), decipher.final()]).toString('utf-8');
+
+        // Save the decrypted text to a file
+        await saveToFile('symmetric_decrypted_text.txt', decryptedText);
+
+        res.status(200).send('Symmetric decryption completed successfully');
+    } catch (error) {
+        console.error('Error processing file:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
 app.post('/asymmetricEncryption', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
@@ -91,17 +156,18 @@ app.post('/asymmetricDecryption', upload.single('file'), async (req, res) => {
         // Read the public key from the file
         const publicKey = await readFile('public_key.txt');
 
-        // Perform asymmetric decryption logic
         const decryptedTextWithHash = decryptAsymmetric(encryptedTextWithHash, publicKey);
 
+        const originalSignature = await readFile('digital_signature.txt');
+
         // Separate the decrypted data and hash
-        const decryptedData = decryptedTextWithHash.slice(0, -64); // Assuming SHA-256 hash (64 characters)
-        const decryptedHash = decryptedTextWithHash.slice(-64);    // Assuming SHA-256 hash (64 characters)
+        const decryptedData = decryptedTextWithHash.slice(0, -64);
+        const decryptedHash = decryptedTextWithHash.slice(-64);
 
-        // Verify the integrity of the decrypted data
-        const isIntegrityVerified = calculateHash(decryptedData) === decryptedHash;
+        const isHashValid = calculateHash(fileContent) === decryptedHash;
+        const isSignatureValid = verifySignature(fileContent, originalSignature, publicKey)
 
-        if (isIntegrityVerified) {
+        if (isHashValid && isSignatureValid) {
             // Save the decrypted text to a file
             await saveToFile('decrypted_text.txt', decryptedData);
 

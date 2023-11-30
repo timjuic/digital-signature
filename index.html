@@ -3,51 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
     <title>Crypto Toolkit</title>
 </head>
-<body>Digitalni potpis</h1>
+<body>
+<div id="container">
+    <h1>Digitalni potpis</h1>
 
-<label for="fileInput">Choose File:</label>
-<input type="file" id="fileInput" accept=".txt">
+    <label for="fileInput">Choose File:</label>
+    <input type="file" id="fileInput" accept=".txt">
 
-<div>
-    <label for="secretKey">Secret Key:</label>
-    <input type="text" id="secretKey">
-    <button onclick="generateSecretKey()">Load Secret Key</button>
+    <br>
+
+    <button onclick="encryptSymmetric()" class="symmetric">Kriptiraj simetrično</button>
+    <button onclick="decryptSymmetric()" class="symmetric">Dekriptiraj simetrično</button>
+    <button onclick="encryptAsymmetric()" class="asymmetric">Kriptiraj asimetrično</button>
+    <button onclick="decryptAsymmetric()" class="asymmetric">Dekriptiraj asimetrično</button>
+
+    <div class="result"></div>
 </div>
-
-<div>
-    <label for="publicKey">Public Key:</label>
-    <input type="text" id="publicKey">
-    <button onclick="generatePublicKey()">Load Public Key</button>
-</div>
-
-<div>
-    <label for="privateKey">Private Key:</label>
-    <input type="text" id="privateKey">
-    <button onclick="generatePrivateKey()">Load Private Key</button>
-</div>
-
-<button onclick="encryptSymmetric()">Encrypt Symmetrically</button>
-<button onclick="decryptSymmetric()">Decrypt Symmetrically</button>
-<button onclick="encryptAsymmetric()">Encrypt Asymmetrically</button>
-<button onclick="decryptAsymmetric()">Decrypt Asymmetrically</button>
 
 <script>
-    // Placeholder functions for loading keys and cryptographic operations
+    const resultElem = document.querySelector(".result");
     const serverBaseUrl = 'http://localhost:3000'; // Replace with your actual server URL
-
-    async function sendKeyRequest(endpoint, keyType) {
-        try {
-            const response = await fetch(`${serverBaseUrl}/${endpoint}`);
-            console.log(response)
-            const key = await response.text();
-            console.log(key)
-            document.getElementById(`${keyType}Key`).value = key;
-        } catch (error) {
-            console.error('Error fetching key:', error);
-        }
-    }
 
     function prepareFile() {
         const fileInput = document.getElementById('fileInput');
@@ -64,12 +42,52 @@
         return formData;
     }
 
-    function encryptSymmetric() {
-        // Implement symmetric encryption logic here
+    function setSuccessMessage(message) {
+        resultElem.innerHTML = message;
+        resultElem.style.color = 'green';
     }
 
-    function decryptSymmetric() {
+    function setFailedMessage(message) {
+        resultElem.innerHTML = message;
+        resultElem.style.color = 'red';
+    }
 
+    async function encryptSymmetric() {
+        let formData = prepareFile();
+
+        try {
+            const response = await fetch(`${serverBaseUrl}/symmetricEncryption`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                setSuccessMessage("Simetrično kriptiranje uspjelo")
+            } else {
+                setFailedMessage("Simetrično kriptiranje neuspjelo")
+            }
+        } catch (error) {
+            setFailedMessage("Simetrično kriptiranje neuspjelo")
+        }
+    }
+
+    async function decryptSymmetric() {
+        let formData = prepareFile();
+
+        try {
+            const response = await fetch(`${serverBaseUrl}/symmetricDecryption`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                setSuccessMessage("Simetrično dekriptiranje uspjelo")
+            } else {
+                setFailedMessage("Simetrično kriptiranje neuspjelo")
+            }
+        } catch (error) {
+            setFailedMessage("Simetrično kriptiranje neuspjelo")
+        }
     }
 
     async function encryptAsymmetric() {
@@ -82,12 +100,12 @@
             });
 
             if (response.ok) {
-                console.log('Asymmetric crypto operations completed successfully');
+                setSuccessMessage("Asimetrično kriptiranje završeno")
             } else {
-                console.error('Failed to perform asymmetric crypto operations:', response.statusText);
+                setFailedMessage("Asimetrično kriptiranje neuspjelo")
             }
         } catch (error) {
-            console.error('Error performing asymmetric crypto operations:', error);
+            setFailedMessage("Asimetrično kriptiranje neuspjelo")
         }
     }
 
@@ -101,14 +119,16 @@
             });
 
             if (response.ok) {
-                console.log('Asymmetric decrypt operations completed successfully');
+                setSuccessMessage("Asimetrično dekriptiranje uspjelo. Potpis ili sažetak se poklapaju")
             } else {
-                console.error('Failed to perform asymmetric crypto operations:', response.statusText);
+                setFailedMessage("Asimetrično dekriptiranje neuspjelo. Potpis ili sažetak se NE poklapaju")
             }
         } catch (error) {
-            console.error('Error performing asymmetric crypto operations:', error);
+            setFailedMessage("Asimetrično dekriptiranje neuspjelo. Potpis ili sažetak se NE poklapaju")
         }
     }
+
+
 </script>
 </body>
 </html>
