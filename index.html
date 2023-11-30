@@ -76,7 +76,7 @@
         let formData = prepareFile();
 
         try {
-            const response = await fetch(`${serverBaseUrl}/processFile/asymmetric`, {
+            const response = await fetch(`${serverBaseUrl}/asymmetricEncryption`, {
                 method: 'POST',
                 body: formData,
             });
@@ -91,8 +91,23 @@
         }
     }
 
-    function decryptAsymmetric() {
-        // Implement asymmetric decryption logic here
+    async function decryptAsymmetric() {
+        let formData = prepareFile();
+
+        try {
+            const response = await fetch(`${serverBaseUrl}/asymmetricDecryption`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                console.log('Asymmetric decrypt operations completed successfully');
+            } else {
+                console.error('Failed to perform asymmetric crypto operations:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error performing asymmetric crypto operations:', error);
+        }
     }
 </script>
 </body>
