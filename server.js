@@ -26,10 +26,13 @@ app.post('/symmetricEncryption', upload.single('file'), async (req, res) => {
 
         const encryptedText = Buffer.concat([cipher.update(fileContent, 'utf-8'), cipher.final()]).toString('base64');
 
-        await saveToFile('secret_key.txt', symmetricKey.toString('base64'));
-        await saveToFile('symmetric_iv.txt', iv.toString('base64'));
+        const digitalSignature = await generateHMAC(encryptedText, symmetricKey);
 
-        await saveToFile('symmetric_encrypted_text.txt', encryptedText);
+        await saveToFile('tajni_kljuc.txt', symmetricKey.toString('base64'));
+        await saveToFile('symmetric_iv.txt', iv.toString('base64'));
+        await saveToFile('kriptirani_tekst.txt', encryptedText);
+        await saveToFile('digitalni_potpis.txt', digitalSignature);
+
 
         res.status(200).send('Symmetric encryption completed successfully');
     } catch (error) {
@@ -44,18 +47,23 @@ app.post('/symmetricDecryption', upload.single('file'), async (req, res) => {
             return res.status(400).send('No file uploaded');
         }
 
-        const fileContent = req.file.buffer.toString('utf-8');
+        const encryptedText = await readFile('kriptirani_tekst.txt');
 
-        const encryptedText = await readFile('symmetric_encrypted_text.txt');
-
-        const symmetricKey = Buffer.from(await readFile('secret_key.txt'), 'base64');
+        const symmetricKey = Buffer.from(await readFile('tajni_kljuc.txt'), 'base64');
         const iv = Buffer.from(await readFile('symmetric_iv.txt'), 'base64');
 
         const decipher = crypto.createDecipheriv('aes-256-cbc', symmetricKey, iv);
 
         const decryptedText = Buffer.concat([decipher.update(Buffer.from(encryptedText, 'base64')), decipher.final()]).toString('utf-8');
 
-        await saveToFile('symmetric_decrypted_text.txt', decryptedText);
+        await saveToFile('dekriptirani_text.txt', decryptedText);
+
+        const digitalSignature = await readFile('digitalni_potpis.txt');
+        const isSignatureValid = await verifyHMAC(encryptedText, symmetricKey, digitalSignature);
+
+        if (!isSignatureValid) {
+            return res.status(400).send('Digital signature verification failed. The file may have been tampered with.');
+        }
 
         res.status(200).send('Symmetric decryption completed successfully');
     } catch (error) {
@@ -73,17 +81,15 @@ app.post('/asymmetricEncryption', upload.single('file'), async (req, res) => {
         const fileContent = req.file.buffer.toString('utf-8');
 
         const hash = calculateHash(fileContent);
+        await saveToFile('sazetak.txt', hash);
 
         const { encryptedText, publicKey, privateKey } = await encryptAsymmetric(fileContent + hash);
-        await saveToFile('private_key.txt', privateKey);
-        await saveToFile('public_key.txt', publicKey);
-        await saveToFile('asymmetric_encrypted_text.txt', encryptedText);
+        await saveToFile('privatni_kljuc.txt', privateKey);
+        await saveToFile('javni_kljuc.txt', publicKey);
+        await saveToFile('kriptirani_tekst.txt', encryptedText);
 
         const signature = await signText(fileContent);
-
-        await saveToFile('digital_signature.txt', signature);
-
-        await saveToFile('hash.txt', hash);
+        await saveToFile('digitalni_potpis.txt', signature);
 
         res.status(200).send('Asymmetric encryption with digital signature and hashing completed successfully');
     } catch (error) {
@@ -101,13 +107,13 @@ app.post('/asymmetricDecryption', upload.single('file'), async (req, res) => {
 
         const fileContent = req.file.buffer.toString('utf-8');
 
-        const encryptedTextWithHash = await readFile('asymmetric_encrypted_text.txt');
+        const encryptedTextWithHash = await readFile('kriptirani_tekst.txt');
 
-        const publicKey = await readFile('public_key.txt');
+        const publicKey = await readFile('javni_kljuc.txt');
 
         const decryptedTextWithHash = decryptAsymmetric(encryptedTextWithHash, publicKey);
 
-        const originalSignature = await readFile('digital_signature.txt');
+        const originalSignature = await readFile('digitalni_potpis.txt');
 
         const decryptedData = decryptedTextWithHash.slice(0, -64);
         const decryptedHash = decryptedTextWithHash.slice(-64);
@@ -116,7 +122,7 @@ app.post('/asymmetricDecryption', upload.single('file'), async (req, res) => {
         const isSignatureValid = verifySignature(fileContent, originalSignature, publicKey)
 
         if (isHashValid && isSignatureValid) {
-            await saveToFile('decrypted_text.txt', decryptedData);
+            await saveToFile('dekriptirani_text.txt', decryptedData);
 
             res.status(200).send('Asymmetric decryption and signature verification completed successfully');
         } else {
@@ -159,7 +165,7 @@ function verifySignature(data, signature, publicKey) {
 
 async function signText(text) {
     const signature = crypto.sign('RSA-SHA256', Buffer.from(text, 'utf-8'), {
-        key: await readFile('private_key.txt'),
+        key: await readFile('privatni_kljuc.txt'),
         padding: crypto.constants.RSA_PKCS1_PADDING
     });
 
@@ -181,6 +187,22 @@ async function saveToFile(fileName, content) {
 async function readFile(fileName) {
     const filePath = path.join(__dirname, fileName);
     return await fs.readFile(filePath, 'utf-8');
+}
+
+async function generateHMAC(text, key) {
+    const hmac = crypto.createHmac('sha256', key);
+    hmac.update(text);
+
+    return hmac.digest('base64');
+}
+
+async function verifyHMAC(text, key, providedHMAC) {
+    const hmac = crypto.createHmac('sha256', key);
+    hmac.update(text);
+
+    const computedHMAC = hmac.digest('base64');
+
+    return computedHMAC === providedHMAC;
 }
 
 app.listen(port, () => {

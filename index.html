@@ -81,12 +81,12 @@
             });
 
             if (response.ok) {
-                setSuccessMessage("Simetrično dekriptiranje uspjelo")
+                setSuccessMessage("Simetrično dekriptiranje uspjelo. Datoteka je autentična")
             } else {
-                setFailedMessage("Simetrično kriptiranje neuspjelo")
+                setFailedMessage("Simetrično kriptiranje neuspjelo. Datoteka promjenjena")
             }
         } catch (error) {
-            setFailedMessage("Simetrično kriptiranje neuspjelo")
+            setFailedMessage("Simetrično kriptiranje neuspjelo. Datoteka promjenjena")
         }
     }
 
@@ -100,7 +100,7 @@
             });
 
             if (response.ok) {
-                setSuccessMessage("Asimetrično kriptiranje završeno")
+                setSuccessMessage("Asimetrično kriptiranje uspješno")
             } else {
                 setFailedMessage("Asimetrično kriptiranje neuspjelo")
             }
@@ -119,12 +119,12 @@
             });
 
             if (response.ok) {
-                setSuccessMessage("Asimetrično dekriptiranje uspjelo. Potpis ili sažetak se poklapaju")
+                setSuccessMessage("Asimetrično dekriptiranje uspjelo. Datoteka je autentična")
             } else {
-                setFailedMessage("Asimetrično dekriptiranje neuspjelo. Potpis ili sažetak se NE poklapaju")
+                setFailedMessage("Asimetrično dekriptiranje neuspjelo. Datoteka promjenjena")
             }
         } catch (error) {
-            setFailedMessage("Asimetrično dekriptiranje neuspjelo. Potpis ili sažetak se NE poklapaju")
+            setFailedMessage("Asimetrično dekriptiranje neuspjelo. Datoteka promjenjena")
         }
     }
 
